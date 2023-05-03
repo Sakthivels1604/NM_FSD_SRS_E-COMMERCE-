@@ -1,0 +1,103 @@
+// Assuming you have already set up your Node.js and Express.js environment
+
+const express = require('express');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+// Connect to your MongoDB database
+mongoose.connect('mongodb://localhost/flight-ticket-booking', { useNewUrlParser: true, useUnifiedTopology: true });
+
+// Create a Flight schema and model
+const flightSchema = new mongoose.Schema({
+  airline: String,
+  sourceAirport: String,
+  destinationAirport: String,
+  departureTime: Date,
+  arrivalTime: Date,
+  price: Number,
+  availableSeats: Number
+});
+
+const Flight = mongoose.model('Flight', flightSchema);
+
+const app = express();
+
+// Middleware
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+// Get all flights
+app.get('/flights', (req, res) => {
+  Flight.find({}, (err, flights) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json(flights);
+    }
+  });
+});
+
+// Create a new flight
+app.post('/flights', (req, res) => {
+  const flightData = req.body;
+  const newFlight = new Flight(flightData);
+  
+  newFlight.save((err, flight) => {
+    if (err) {
+      res.status(500).send(err);
+    } else {
+      res.json(flight);
+    }
+  });
+});
+
+// Get a specific flight by ID
+app.get('/flights/:id', (req, res) => {
+  const flightId = req.params.id;
+  
+  Flight.findById(flightId, (err, flight) => {
+    if (err) {
+      res.status(500).send(err);
+    } else if (!flight) {
+      res.status(404).send('Flight not found');
+    } else {
+      res.json(flight);
+    }
+  });
+});
+
+// Update a flight
+app.put('/flights/:id', (req, res) => {
+  const flightId = req.params.id;
+  const flightData = req.body;
+  
+  Flight.findByIdAndUpdate(flightId, flightData, { new: true }, (err, flight) => {
+    if (err) {
+      res.status(500).send(err);
+    } else if (!flight) {
+      res.status(404).send('Flight not found');
+    } else {
+      res.json(flight);
+    }
+  });
+});
+
+// Delete a flight
+app.delete('/flights/:id', (req, res) => {
+  const flightId = req.params.id;
+  
+  Flight.findByIdAndDelete(flightId, (err, flight) => {
+    if (err) {
+      res.status(500).send(err);
+    } else if (!flight) {
+      res.status(404).send('Flight not found');
+    } else {
+      res.sendStatus(204);
+    }
+  });
+});
+
+// Start the server
+app.listen(3000, () => {
+  console.log('Server started on port 3000');
+});
